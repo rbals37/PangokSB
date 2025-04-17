@@ -51,8 +51,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 fake_users_db = {
     "testuser": {
         "username": "testuser",
-        "full_name": "Test User",
-        "email": "test@example.com",
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "password123"
         "disabled": False,
     }
@@ -67,8 +65,6 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
     disabled: Optional[bool] = None
 
 class UserInDB(User):
@@ -76,8 +72,6 @@ class UserInDB(User):
 
 class UserCreate(BaseModel):
     username: str
-    email: str
-    full_name: str
     password: str
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -94,10 +88,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def get_user(db, username: str):
@@ -154,7 +148,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(mongo_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -184,8 +178,6 @@ async def register_user(user: UserCreate):
     hashed_password = get_password_hash(user.password)
     user_dict = {
         "username": user.username,
-        "email": user.email,
-        "full_name": user.full_name,
         "hashed_password": hashed_password,
         "disabled": False
     }
@@ -197,4 +189,59 @@ async def register_user(user: UserCreate):
         # 가상 데이터베이스에 사용자 저장
         fake_users_db[user.username] = user_dict
     
-    return User(**user_dict) 
+    return User(**user_dict)
+
+@app.post("/verify-password")
+async def verify_password_endpoint(password_data: dict, current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    user = get_user(mongo_db, current_user.username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not verify_password(password_data["password"], user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    return {"message": "Password verified"}
+
+@app.post("/update-profile")
+async def update_profile(profile_data: dict):
+    username = get_current_user()
+    if not username:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    user = get_user(mongo_db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 업데이트할 데이터 준비
+    update_data = {}
+    
+    # 학번이 변경된 경우
+    if "username" in profile_data and profile_data["username"] != username:
+        # 새 학번이 이미 존재하는지 확인
+        existing_user = get_user(mongo_db, profile_data["username"])
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        update_data["username"] = profile_data["username"]
+    
+    # 비밀번호가 제공된 경우에만 업데이트
+    if "password" in profile_data and profile_data["password"]:
+        update_data["hashed_password"] = get_password_hash(profile_data["password"])
+    
+    # MongoDB에 업데이트
+    if mongo_db is not None:
+        try:
+            mongo_db.users.update_one(
+                {"username": username},
+                {"$set": update_data}
+            )
+        except Exception as e:
+            print(f"MongoDB update error: {e}")
+            raise HTTPException(status_code=500, detail="Database error")
+    else:
+        # 가상 데이터베이스 업데이트
+        fake_users_db[username].update(update_data)
+    
+    return {"message": "Profile updated successfully"} 

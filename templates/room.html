@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room_id }} 방{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center mb-0">{{ room_id }} 방</h2>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h3>환영합니다!</h3>
+                        <p class="lead">이곳은 {{ room_id }} 방입니다.</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">홈으로 돌아가기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

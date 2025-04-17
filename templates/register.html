@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}회원가입{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">회원가입</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="registerForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">학번</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">비밀번호 확인</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <div id="passwordMatchMessage" class="form-text text-danger d-none">비밀번호가 일치하지 않습니다.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="registerButton">회원가입</button>
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <p>이미 계정이 있으신가요? <a href="{{ url_for('login') }}">로그인</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('registerForm');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const passwordMatchMessage = document.getElementById('passwordMatchMessage');
+        const registerButton = document.getElementById('registerButton');
+        
+        // 비밀번호 확인 함수
+        function checkPasswordMatch() {
+            if (password.value !== confirmPassword.value) {
+                passwordMatchMessage.classList.remove('d-none');
+                registerButton.disabled = true;
+                return false;
+            } else {
+                passwordMatchMessage.classList.add('d-none');
+                registerButton.disabled = false;
+                return true;
+            }
+        }
+        
+        // 비밀번호 입력 시 확인
+        password.addEventListener('input', checkPasswordMatch);
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+        
+        // 폼 제출 전 확인
+        form.addEventListener('submit', function(event) {
+            if (!checkPasswordMatch()) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %} 

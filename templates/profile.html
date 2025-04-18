@@ -5,9 +5,23 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">프로필 정보</h3>
+                <button type="button" class="btn btn-primary" id="editProfileBtn">
+                    정보 수정
+                </button>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -34,4 +48,180 @@
         </div>
     </div>
 </div>
+
+<!-- 비밀번호 확인 모달 -->
+<div class="modal fade" id="passwordConfirmModal" tabindex="-1" aria-labelledby="passwordConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordConfirmModalLabel">비밀번호 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>정보를 수정하기 위해 비밀번호를 입력해주세요.</p>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">비밀번호</label>
+                    <input type="password" class="form-control" id="confirmPassword">
+                </div>
+                <div id="passwordError" class="alert alert-danger d-none">
+                    비밀번호가 일치하지 않습니다.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="confirmPasswordBtn">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 정보 수정 모달 -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">정보 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">학번</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" value="{{ user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">새 비밀번호 (변경하지 않으려면 비워두세요)</label>
+                        <input type="password" class="form-control" id="editPassword" name="password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editConfirmPassword" class="form-label">새 비밀번호 확인</label>
+                        <input type="password" class="form-control" id="editConfirmPassword" name="confirm_password">
+                        <div id="editPasswordMatchMessage" class="form-text text-danger d-none">비밀번호가 일치하지 않습니다.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="saveProfileBtn">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 모달 요소
+        const passwordConfirmModal = new bootstrap.Modal(document.getElementById('passwordConfirmModal'));
+        const editProfileModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+        
+        // 정보 수정 버튼 클릭 시 비밀번호 확인 모달 표시
+        document.getElementById('editProfileBtn').addEventListener('click', function() {
+            passwordConfirmModal.show();
+        });
+        
+        // 비밀번호 확인 버튼 클릭 시
+        document.getElementById('confirmPasswordBtn').addEventListener('click', function() {
+            const password = document.getElementById('confirmPassword').value;
+            const passwordError = document.getElementById('passwordError');
+            
+            // 세션에서 토큰 가져오기
+            const token = '{{ session.get("access_token", "") }}';
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 비밀번호 확인 API 호출
+            fetch('/verify-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 비밀번호 확인 성공
+                    passwordConfirmModal.hide();
+                    editProfileModal.show();
+                } else {
+                    // 비밀번호 확인 실패
+                    passwordError.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                passwordError.classList.remove('d-none');
+            });
+        });
+        
+        // 새 비밀번호 확인
+        const editPassword = document.getElementById('editPassword');
+        const editConfirmPassword = document.getElementById('editConfirmPassword');
+        const editPasswordMatchMessage = document.getElementById('editPasswordMatchMessage');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+        
+        function checkEditPasswordMatch() {
+            if (editPassword.value && editPassword.value !== editConfirmPassword.value) {
+                editPasswordMatchMessage.classList.remove('d-none');
+                saveProfileBtn.disabled = true;
+                return false;
+            } else {
+                editPasswordMatchMessage.classList.add('d-none');
+                saveProfileBtn.disabled = false;
+                return true;
+            }
+        }
+        
+        editPassword.addEventListener('input', checkEditPasswordMatch);
+        editConfirmPassword.addEventListener('input', checkEditPasswordMatch);
+        
+        // 저장 버튼 클릭 시
+        saveProfileBtn.addEventListener('click', function() {
+            if (!checkEditPasswordMatch()) {
+                return;
+            }
+            
+            const formData = {
+                username: document.getElementById('editUsername').value
+            };
+            
+            // 비밀번호가 입력된 경우에만 포함
+            if (editPassword.value) {
+                formData.password = editPassword.value;
+            }
+            
+            // 세션에서 토큰 가져오기
+            const token = '{{ session.get("access_token", "") }}';
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 정보 수정 API 호출
+            fetch('/update-profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 정보 수정 성공
+                    editProfileModal.hide();
+                    window.location.reload();
+                } else {
+                    // 정보 수정 실패
+                    alert('정보 수정에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('정보 수정 중 오류가 발생했습니다.');
+            });
+        });
+    });
+</script>
 {% endblock %} 

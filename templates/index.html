@@ -4,10 +4,9 @@
 
 {% block content %}
 <div class="text-center mb-5">
-    <h1 class="display-4">인증 시스템에 오신 것을 환영합니다</h1>
+    <h1 class="display-4">자습실 시스템에 오신 것을 환영합니다</h1>
     <p class="lead">
         {% if 'access_token' in session %}
-            로그인되어 있습니다. <a href="{{ url_for('profile') }}">프로필</a>을 확인하세요.
         {% else %}
             로그인하여 시작하세요.
         {% endif %}
@@ -19,7 +18,7 @@
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <h2 class="card-title">A 방</h2>
-                <p class="card-text">A 방에 입장하세요.</p>
+                <p class="card-text">asdf</p>
                 <a href="{{ url_for('room', room_id='A') }}" class="btn btn-primary btn-lg mt-auto">A 방 입장</a>
             </div>
         </div>
@@ -29,7 +28,7 @@
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <h2 class="card-title">B 방</h2>
-                <p class="card-text">B 방에 입장하세요.</p>
+                <p class="card-text">asdf</p>
                 <a href="{{ url_for('room', room_id='B') }}" class="btn btn-success btn-lg mt-auto">B 방 입장</a>
             </div>
         </div>
@@ -39,7 +38,7 @@
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <h2 class="card-title">C 방</h2>
-                <p class="card-text">C 방에 입장하세요.</p>
+                <p class="card-text">asdf</p>
                 <a href="{{ url_for('room', room_id='C') }}" class="btn btn-info btn-lg mt-auto">C 방 입장</a>
             </div>
         </div>

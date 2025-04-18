@@ -20,7 +20,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD", "")
 MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
 MONGO_PORT = int(os.getenv("MONGO_PORT", "27017"))
 MONGO_DB = os.getenv("MONGO_DB", "auth_system")
-
+#Gravatar api key is 3869:gk-qno9n8kEDtJ46fm3ijbOXQgKvgT-8DvN70leuhM0PxsHb0UMT9DCSIPgE5YSg
 # MongoDB 연결 문자열 생성
 if MONGO_USERNAME and MONGO_PASSWORD:
     MONGO_URI = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"
@@ -28,33 +28,13 @@ else:
     MONGO_URI = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"
 
 # MongoDB 클라이언트 생성
-mongo_client = None
-mongo_db = None
-try:
-    mongo_client = MongoClient(MONGO_URI)
-    mongo_db = mongo_client[MONGO_DB]
-    # 연결 테스트
-    mongo_client.server_info()
-    print("MongoDB 연결 성공!")
-except Exception as e:
-    print(f"MongoDB 연결 실패: {e}")
-    # 연결 실패 시 가상 데이터베이스 사용
-    mongo_client = None
-    mongo_db = None
+mongo_client = MongoClient(MONGO_URI)
+mongo_db = mongo_client[MONGO_DB]
 
 # 보안 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# 가상의 사용자 데이터베이스 (MongoDB 연결 실패 시 사용)
-fake_users_db = {
-    "testuser": {
-        "username": "testuser",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "password123"
-        "disabled": False,
-    }
-}
 
 class Token(BaseModel):
     access_token: str
@@ -95,21 +75,14 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def get_user(db, username: str):
-    if mongo_db is not None:
-        # MongoDB에서 사용자 조회
-        user_dict = mongo_db.users.find_one({"username": username})
-        if user_dict:
-            # MongoDB의 _id 필드 제거 (Pydantic 모델과 호환되지 않음)
-            user_dict.pop("_id", None)
-            return UserInDB(**user_dict)
-    else:
-        # 가상 데이터베이스에서 사용자 조회
-        if username in fake_users_db:
-            user_dict = fake_users_db[username]
-            return UserInDB(**user_dict)
+    user_dict = mongo_db.users.find_one({"username": username})
+    if user_dict:
+        # MongoDB의 _id 필드 제거 (Pydantic 모델과 호환되지 않음)
+        user_dict.pop("_id", None)
+        return UserInDB(**user_dict)
     return None
 
-def authenticate_user(fake_db, username: str, password: str):
+def authenticate_user(username: str, password: str):
     user = get_user(mongo_db, username)
     if not user:
         return False
@@ -148,7 +121,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(mongo_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -182,12 +155,8 @@ async def register_user(user: UserCreate):
         "disabled": False
     }
     
-    if mongo_db is not None:
-        # MongoDB에 사용자 저장
-        mongo_db.users.insert_one(user_dict)
-    else:
-        # 가상 데이터베이스에 사용자 저장
-        fake_users_db[user.username] = user_dict
+    # MongoDB에 사용자 저장
+    mongo_db.users.insert_one(user_dict)
     
     return User(**user_dict)
 
@@ -206,12 +175,11 @@ async def verify_password_endpoint(password_data: dict, current_user: User = Dep
     return {"message": "Password verified"}
 
 @app.post("/update-profile")
-async def update_profile(profile_data: dict):
-    username = get_current_user()
-    if not username:
+async def update_profile(profile_data: dict, current_user: User = Depends(get_current_user)):
+    if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    user = get_user(mongo_db, username)
+    user = get_user(mongo_db, current_user.username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -219,7 +187,7 @@ async def update_profile(profile_data: dict):
     update_data = {}
     
     # 학번이 변경된 경우
-    if "username" in profile_data and profile_data["username"] != username:
+    if "username" in profile_data and profile_data["username"] != current_user.username:
         # 새 학번이 이미 존재하는지 확인
         existing_user = get_user(mongo_db, profile_data["username"])
         if existing_user:
@@ -231,17 +199,13 @@ async def update_profile(profile_data: dict):
         update_data["hashed_password"] = get_password_hash(profile_data["password"])
     
     # MongoDB에 업데이트
-    if mongo_db is not None:
-        try:
-            mongo_db.users.update_one(
-                {"username": username},
-                {"$set": update_data}
-            )
-        except Exception as e:
-            print(f"MongoDB update error: {e}")
-            raise HTTPException(status_code=500, detail="Database error")
-    else:
-        # 가상 데이터베이스 업데이트
-        fake_users_db[username].update(update_data)
+    try:
+        mongo_db.users.update_one(
+            {"username": current_user.username},
+            {"$set": update_data}
+        )
+    except Exception as e:
+        print(f"MongoDB update error: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
     
     return {"message": "Profile updated successfully"} 

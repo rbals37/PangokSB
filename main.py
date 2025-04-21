@@ -32,7 +32,7 @@ mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB]
 
 # 보안 설정
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
+SECRET_KEY = os.getenv("SECRET_KEY")  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

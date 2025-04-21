@@ -4,7 +4,7 @@ from functools import wraps
 import hashlib
 
 app = Flask(__name__)
-app.secret_key = 'yihyunjinbyoungsin'  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
+app.secret_key = 'secrect-key'  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
 
 # FastAPI 백엔드 URL
 API_URL = "http://localhost:8000"

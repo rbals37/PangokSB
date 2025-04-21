@@ -20,7 +20,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD", "")
 MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
 MONGO_PORT = int(os.getenv("MONGO_PORT", "27017"))
 MONGO_DB = os.getenv("MONGO_DB", "auth_system")
-#Gravatar api key is 3869:gk-qno9n8kEDtJ46fm3ijbOXQgKvgT-8DvN70leuhM0PxsHb0UMT9DCSIPgE5YSg
+
 # MongoDB 연결 문자열 생성
 if MONGO_USERNAME and MONGO_PASSWORD:
     MONGO_URI = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"

@@ -1,0 +1,5 @@
+ecdsa==0.19.1
+pyasn1==0.4.8
+python-jose==3.4.0
+rsa==4.9.1
+six==1.17.0

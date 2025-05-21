@@ -10,22 +10,15 @@ __pycache__/
 .Python
 env/
 venv/
-build/
-develop-eggs/
+.build/
 dist/
-downloads/
-eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
 *.egg-info/
 .installed.cfg
 *.egg
+*.whl
 
-# macOS files
+# macOS system files
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -35,14 +28,18 @@ Icon?
 .Trashes
 *.swp
 
-# Windows files
+# Windows system files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+*.lnk
 
-# VSCode
+# IDEs and editors
 .vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
 
 # Testing / coverage
 htmlcov/
@@ -54,26 +51,27 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# mypy / ruff / lint
+# Linting / type checking
 .mypy_cache/
 ruff_cache/
+.pyre/
 
 # Logs
 *.log
-
-# IDEs
-.idea/
-*.sublime-project
-*.sublime-workspace
 
 # dotenv
 .env
 .env.*
 
-# Local db / temp
+# Local database
 *.sqlite3
 *.db
 
-# MongoDB local database dumps
+# MongoDB dumps
 dump/
 *.mongodb
+
+# Others
+*.bak
+*.tmp
+*.old

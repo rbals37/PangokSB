@@ -3,10 +3,6 @@
 # 터미널에서 make run이라고 입력하면 됨.
 # 추가하고 싶은 명령어가 있으면 어떻게 줄일건지 적고, 다음 줄에 탭으로 들여쓰기 해야 함. 스페이스로 하면 안됨.
 
-
-activate:
-	source venv/bin/activate
-
 # 개발 서버 실행
 run:
 	uvicorn main:app --reload

@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 import pymongo
 from pymongo import MongoClient
 import os
@@ -28,13 +28,26 @@ else:
     MONGO_URI = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"
 
 # MongoDB 클라이언트 생성
-mongo_client = MongoClient(MONGO_URI)
-mongo_db = mongo_client[MONGO_DB]
+try:
+    print(f"Connecting to MongoDB with URI: {MONGO_URI}")
+    mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # 연결 테스트
+    mongo_client.server_info()
+    mongo_db = mongo_client[MONGO_DB]
+    print("MongoDB connection successful")
+except pymongo.errors.ServerSelectionTimeoutError as e:
+    print(f"Could not connect to MongoDB: {e}")
+    # 개발 환경에서는 계속 진행
+    if os.getenv("ENVIRONMENT", "development") == "production":
+        raise
+    else:
+        print("Running in development mode without MongoDB")
+        mongo_db = None
 
 # 보안 설정
-SECRET_KEY = os.getenv("SECRET_KEY")  # 실제 프로덕션에서는 환경 변수로 관리해야 합니다
+SECRET_KEY = os.getenv("SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")  # 개발용 기본값
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 class Token(BaseModel):
     access_token: str
@@ -62,7 +75,7 @@ app = FastAPI()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000"],  # Flask 프론트엔드 주소
+    allow_origins=["*"],  # 개발용으로 모든 오리진 허용, 프로덕션에서는 제한하세요
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,7 +88,10 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def get_user(db, username: str):
-    user_dict = mongo_db.users.find_one({"username": username})
+    if db is None:  # MongoDB 연결이 없는 경우 처리
+        return None
+    
+    user_dict = db.users.find_one({"username": username})
     if user_dict:
         # MongoDB의 _id 필드 제거 (Pydantic 모델과 호환되지 않음)
         user_dict.pop("_id", None)
@@ -140,6 +156,12 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 @app.post("/register", response_model=User)
 async def register_user(user: UserCreate):
+    if mongo_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection not available"
+        )
+    
     # 사용자 이름 중복 확인
     existing_user = get_user(mongo_db, user.username)
     if existing_user:
@@ -156,7 +178,14 @@ async def register_user(user: UserCreate):
     }
     
     # MongoDB에 사용자 저장
-    mongo_db.users.insert_one(user_dict)
+    try:
+        mongo_db.users.insert_one(user_dict)
+    except Exception as e:
+        print(f"Error inserting user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error"
+        )
     
     return User(**user_dict)
 
@@ -208,4 +237,35 @@ async def update_profile(profile_data: dict, current_user: User = Depends(get_cu
         print(f"MongoDB update error: {e}")
         raise HTTPException(status_code=500, detail="Database error")
     
-    return {"message": "Profile updated successfully"} 
+    return {"message": "Profile updated successfully"}
+
+# 헬스 체크 엔드포인트 추가
+@app.get("/health")
+async def health_check():
+    """
+    서버 상태 확인용 엔드포인트
+    """
+    try:
+        if mongo_db:
+            # 간단한 쿼리로 DB 연결 테스트
+            mongo_db.command('ping')
+            db_status = "connected"
+        else:
+            db_status = "not connected"
+            
+        return {
+            "status": "healthy",
+            "database": db_status,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+# 메인 엔드포인트 추가
+@app.get("/")
+async def root():
+    return {"message": "Welcome to Authentication API"}

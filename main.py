@@ -10,6 +10,18 @@ import pymongo
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 # 환경 변수 로드
 load_dotenv()
@@ -69,8 +81,6 @@ class UserCreate(BaseModel):
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-app = FastAPI()
 
 # CORS 설정
 app.add_middleware(
@@ -264,8 +274,3 @@ async def health_check():
             "error": str(e),
             "timestamp": datetime.utcnow().isoformat()
         }
-
-# 메인 엔드포인트 추가
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Authentication API"}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Availability</title>
+    <style>
+        body { font-family: sans-serif; }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 50px); /* Adjust the number of columns as needed */
+            gap: 5px;
+        }
+        .seat {
+            width: 50px;
+            height: 30px;
+            border: 1px solid black;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+        }
+        .available { background-color: lightgreen; }
+        .unavailable { background-color: lightcoral; }
+    </style>
+</head>
+<body>
+    <h1>Seat Availability</h1>
+    <p>Welcome!</p>
+    <a href="{{ url_for('info') }}">My Info</a> | <a href="{{ url_for('logout') }}">Logout</a> | <a href="{{ url_for('admin') }}">Admin</a>
+    <div class="seat-grid">
+        {% for seat in seats %}
+            <div class="seat {% if seat['is_available'] %}available{% else %}unavailable{% endif %}"
+                 onclick="{% if seat['is_available'] %}reserveSeat('{{ seat['seat_id'] }}'){% endif %}">
+                Row: {{ seat['row'] }}, Col: {{ seat['col'] }}
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        function reserveSeat(seatId) {
+            if (confirm('Do you want to reserve this seat?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/reserve';
+
+                const seatIdInput = document.createElement('input');
+                seatIdInput.type = 'hidden';
+                seatIdInput.name = 'seat_id';
+                seatIdInput.value = seatId;
+                form.appendChild(seatIdInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Info</title>
+    <style>
+        body { font-family: sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>User Info</h1>
+    <p>Student ID: {{ user['student_id'] }}</p>
+    <h2>Reservations</h2>
+    <ul>
+        {% for reservation in reservations %}
+            <li>Row: {{ reservation['row'] }}, Col: {{ reservation['col'] }}</li>
+        {% else %}
+            <li>No reservations yet.</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('check') }}">Back to Seat Availability</a> | <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>

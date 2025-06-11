@@ -1,26 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <style>
-        body { font-family: sans-serif; }
-        .error { color: red; }
-    </style>
-</head>
-<body>
-    <h1>Login</h1>
+{% include 'header.html' %}
+    <h1 style="text-align: center; margin-bottom: 20px;">로그인</h1>
+    
     {% if error %}
-        <p class="error">{{ error }}</p>
+        <p style="color: #dc3545; text-align: center; margin-bottom: 20px;">{{ error }}</p>
     {% endif %}
-    <form method="post" action="/login">
-        <label for="student_id">Student ID:</label><br>
-        <input type="text" id="student_id" name="student_id" required><br><br>
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
-        <input type="submit" value="Login">
-    </form>
-    <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></p>
-</body>
-</html>
+    
+    <div style="max-width: 400px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+        <form method="post" action="/login" style="display: flex; flex-direction: column; gap: 15px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label for="student_id">학번:</label>
+                <input type="text" id="student_id" name="student_id" required 
+                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label for="password">비밀번호:</label>
+                <input type="password" id="password" name="password" required 
+                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <button type="submit" 
+                    style="padding: 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s;">
+                로그인
+            </button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 20px;">
+            계정이 없으신가요? <a href="{{ url_for('signup') }}" style="color: #4caf50; text-decoration: none;">회원가입</a>
+        </p>
+    </div>
+
+    <style>
+        @media (max-width: 768px) {
+            div[style*="max-width: 400px"] {
+                padding: 15px;
+            }
+            input {
+                font-size: 16px; /* 모바일에서 확대 방지 */
+            }
+            button {
+                font-size: 16px;
+            }
+        }
+    </style>
+{% include 'footer.html' %}

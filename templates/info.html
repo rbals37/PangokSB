@@ -1,24 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Info</title>
+{% include 'header.html' %}
+    <h1 style="text-align: center; margin-bottom: 20px;">내 정보</h1>
+    
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h2 style="margin-top: 0;">학번: {{ user['student_id'] }}</h2>
+            {% if reservations %}
+                <h3>예약 정보:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    {% for reservation in reservations %}
+                        <li style="margin-bottom: 10px; padding: 10px; background-color: #fff; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            자습실{{ reservation['room_id'] }} {{ (reservation['row']-1)*6 + reservation['col'] }}번 좌석
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>현재 예약된 좌석이 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <style>
-        body { font-family: sans-serif; }
+        @media (max-width: 768px) {
+            div[style*="max-width: 600px"] {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+        }
     </style>
-</head>
-<body>
-    <h1>User Info</h1>
-    <p>Student ID: {{ user['student_id'] }}</p>
-    <h2>Reservations</h2>
-    <ul>
-        {% for reservation in reservations %}
-            <li>Row: {{ reservation['row'] }}, Col: {{ reservation['col'] }}</li>
-        {% else %}
-            <li>No reservations yet.</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ url_for('check') }}">Back to Seat Availability</a> | <a href="{{ url_for('logout') }}">Logout</a>
-</body>
-</html>
+{% include 'footer.html' %}

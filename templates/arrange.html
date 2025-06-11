@@ -1,22 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrange Seats</title>
+{% include 'header.html' %}
+    <h1 style="text-align: center; margin-bottom: 20px;">좌석 배치</h1>
+    
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+        <p style="text-align: center; margin-bottom: 20px;">모든 자습실의 좌석을 6x6으로 생성합니다.</p>
+        
+        <form method="post" action="/admin/arrange" style="display: flex; justify-content: center;">
+            <button type="submit" 
+                    style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s;">
+                6x6 좌석 생성
+            </button>
+        </form>
+    </div>
+
     <style>
-        body { font-family: sans-serif; }
+        @media (max-width: 768px) {
+            div[style*="max-width: 600px"] {
+                padding: 15px;
+            }
+            button {
+                font-size: 16px;
+            }
+        }
     </style>
-</head>
-<body>
-    <h1>Arrange Seats</h1>
-    <form method="post" action="/admin/arrange">
-        <label for="rows">Rows:</label>
-        <input type="number" id="rows" name="rows" value="10" min="1" required><br><br>
-        <label for="cols">Columns:</label>
-        <input type="number" id="cols" name="cols" value="10" min="1" required><br><br>
-        <input type="submit" value="Create Seats">
-    </form>
-    <a href="{{ url_for('admin') }}">Back to Admin Panel</a> | <a href="{{ url_for('logout') }}">Logout</a>
-</body>
-</html>
+{% include 'footer.html' %}

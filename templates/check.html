@@ -1,0 +1,78 @@
+{% if not session.get('user_id') %}
+<div style="text-align: center; margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;">
+    <h2 style="margin: 0; color: #1976d2;">환영합니다!</h2>
+    <p style="margin: 10px 0 0 0; color: #424242;">좌석 예약을 하시려면 로그인이 필요합니다.</p>
+</div>
+{% endif %}
+
+{% include 'header.html' %}
+    <h1 style="text-align: center; margin-bottom: 20px;">좌석 현황</h1>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/check.css') }}">
+    <div class="room-select">
+        <a href="{{ url_for('check', room_id=1) }}" class="{{ 'active' if room_id == 1 else '' }}">자습실 1</a>
+        <a href="{{ url_for('check', room_id=2) }}" class="{{ 'active' if room_id == 2 else '' }}">자습실 2</a>
+        <a href="{{ url_for('check', room_id=3) }}" class="{{ 'active' if room_id == 3 else '' }}">자습실 3</a>
+    </div>
+
+    <div style="display: flex; justify-content: center; margin: 20px 0;">
+        <div class="seat-grid" style="max-width: 800px; width: 100%;">
+            {% if room_id == 3 %}
+                {% for row in range(1, 6) %}
+                    <div class="seat-row">
+                        {% for seat in seats if seat['row'] == row %}
+                            <div class="seat {% if seat['is_available'] %}available{% else %}unavailable{% endif %}"
+                                 data-seat-id="{{ seat['seat_id'] }}"
+                                 data-available="{{ seat['is_available'] }}">
+                                {{ (seat['row']-1)*6 + seat['col'] }}
+                            </div>
+                            {% if seat['col'] % 2 == 0 and seat['col'] != 6 %}
+                                <div class="col-gap"></div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                {% for row in range(1, 7) %}
+                    <div class="seat-row">
+                        {% for seat in seats if seat['row'] == row %}
+                            <div class="seat {% if seat['is_available'] %}available{% else %}unavailable{% endif %}"
+                                 data-seat-id="{{ seat['seat_id'] }}"
+                                 data-available="{{ seat['is_available'] }}">
+                                {{ (seat['row']-1)*6 + seat['col'] }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.seat.available').forEach(function(seatDiv) {
+                seatDiv.addEventListener('click', function() {
+                    {% if session.get('user_id') %}
+                        const seatId = this.getAttribute('data-seat-id');
+                        if (confirm('이 좌석을 예약하시겠습니까?')) {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '/reserve';
+                            const seatIdInput = document.createElement('input');
+                            seatIdInput.type = 'hidden';
+                            seatIdInput.name = 'seat_id';
+                            seatIdInput.value = seatId;
+                            form.appendChild(seatIdInput);
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    {% else %}
+                        if (confirm('좌석 예약을 하시려면 로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
+                            window.location.href = "{{ url_for('login') }}";
+                        }
+                    {% endif %}
+                });
+            });
+        });
+    </script>
+{% include 'footer.html' %}

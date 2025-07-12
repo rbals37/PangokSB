@@ -1,0 +1,42 @@
+.seat.available {
+    background-color: #e8f5e9;
+}
+.seat.unavailable {
+    background-color: #ffebee;
+    cursor: not-allowed;
+}
+.seat.available:hover {
+    background-color: #c8e6c9;
+    transform: scale(1.05);
+}
+.seat {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 16px;
+}
+.seat-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.col-gap {
+    width: 20px;
+}
+@media (max-width: 768px) {
+    .seat {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 12px;
+    }
+    .seat-row {
+        gap: 5px !important;
+    }
+} 

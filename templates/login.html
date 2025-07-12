@@ -13,10 +13,13 @@
                        style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; flex-direction: column; gap: 5px; position: relative;">
                 <label for="password">비밀번호:</label>
                 <input type="password" id="password" name="password" required 
-                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; padding-right: 40px;">
+                <span class="toggle-password" data-target="password" style="position: absolute; right: 10px; top: 38px; cursor: pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#888" stroke-width="2" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3" stroke="#888" stroke-width="2"/></svg>
+                </span>
             </div>
             
             <button type="submit" 
@@ -43,4 +46,19 @@
             }
         }
     </style>
+    <script>
+        document.querySelectorAll('.toggle-password').forEach(function(eye) {
+            eye.addEventListener('click', function() {
+                const targetId = eye.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    eye.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'><path stroke='#888' stroke-width='2' d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z'/><circle cx='12' cy='12' r='3' stroke='#888' stroke-width='2'/><line x1='4' y1='20' x2='20' y2='4' stroke='#888' stroke-width='2'/></svg>`;
+                } else {
+                    input.type = 'password';
+                    eye.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'><path stroke='#888' stroke-width='2' d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z'/><circle cx='12' cy='12' r='3' stroke='#888' stroke-width='2'/></svg>`;
+                }
+            });
+        });
+    </script>
 {% include 'footer.html' %}

@@ -1,0 +1,51 @@
+{% include 'header.html' %}
+<div class="container">
+    <h2 style="margin-bottom:20px;">학생 신고 목록</h2>
+    <input type="text" id="report-search" placeholder="검색어를 입력하세요 (학번, 이름, 내용 등)" style="width:100%;max-width:400px;margin-bottom:16px;padding:8px 12px;font-size:1em;border-radius:6px;border:1px solid #bbb;">
+    <table id="report-table" style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="background:#e3f2fd;">
+                <th style="padding:8px; border:1px solid #bbb;">신고자 학번</th>
+                <th style="padding:8px; border:1px solid #bbb;">대상 학번</th>
+                <th style="padding:8px; border:1px solid #bbb;">대상 이름</th>
+                <th style="padding:8px; border:1px solid #bbb;">내용</th>
+                <th style="padding:8px; border:1px solid #bbb;">신고시간</th>
+                <th style="padding:8px; border:1px solid #bbb;">삭제</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reports %}
+            <tr>
+                <td style="padding:8px; border:1px solid #ddd;">{{ r['reporter_id'] or '-' }}</td>
+                <td style="padding:8px; border:1px solid #ddd;">{{ r['target_id'] or '-' }}</td>
+                <td style="padding:8px; border:1px solid #ddd;">{{ r['target_name'] or '-' }}</td>
+                <td style="padding:8px; border:1px solid #ddd;">{{ r['content'] }}</td>
+                <td style="padding:8px; border:1px solid #ddd;">{{ r['report_time'] }}</td>
+                <td style="padding:8px; border:1px solid #ddd;"><button class="delete-btn" data-id="{{ r['report_id'] }}" style="background:#e53935;color:#fff;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;">삭제</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+// 실시간 검색 필터링
+const searchInput = document.getElementById('report-search');
+const table = document.getElementById('report-table');
+searchInput.addEventListener('input', function() {
+    const keyword = this.value.trim().toLowerCase();
+    Array.from(table.tBodies[0].rows).forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(keyword) ? '' : 'none';
+    });
+});
+// 삭제 버튼(서버 연동은 추후 구현)
+document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.onclick = function() {
+        if(confirm('정말 삭제하시겠습니까?')) {
+            // TODO: 서버 연동 필요
+            this.closest('tr').remove();
+        }
+    };
+});
+</script>
+{% include 'footer.html' %} 

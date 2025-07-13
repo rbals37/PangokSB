@@ -1,0 +1,7 @@
+{% include 'header.html' %}
+<div class="container" style="max-width:400px; margin-top:40px; text-align:center;">
+    <h2 style="margin-bottom:32px;">관리자 패널</h2>
+    <a href="{{ url_for('arrange') }}" style="display:block; margin-bottom:18px; padding:16px 0; background:#1976d2; color:#fff; border-radius:8px; font-size:1.15em; text-decoration:none;">좌석 배치 관리</a>
+    <a href="{{ url_for('admin_reports') }}" style="display:block; margin-bottom:18px; padding:16px 0; background:#43a047; color:#fff; border-radius:8px; font-size:1.15em; text-decoration:none;">신고 목록 보기</a>
+</div>
+{% include 'footer.html' %} 

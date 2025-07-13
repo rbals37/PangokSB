@@ -1,0 +1,328 @@
+{% include 'header.html' %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>열품타 시스템</title>
+    <style>
+        body { background: #f7f7f7; font-family: 'Noto Sans KR', sans-serif; }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            justify-content: flex-start;
+        }
+        .top-time {
+            margin-top: 40px;
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: center;
+        }
+        .time-box {
+            background: #1976d2;
+            color: #fff;
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-radius: 12px;
+            padding: 18px 48px;
+            box-shadow: 0 2px 12px rgba(25,118,210,0.08);
+            display: inline-block;
+        }
+        .main-panel {
+            display: flex;
+            flex-direction: row;
+            gap: 60px;
+        }
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .left-panel button {
+            width: 100px;
+            height: 36px;
+            font-size: 0.98em;
+            border: none;
+            border-radius: 7px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .left-panel button:hover {
+            background: #e3f2fd;
+        }
+        .subject-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+        .subject-time {
+            font-size: 0.95em;
+            color: #1976d2;
+            min-width: 70px;
+            display: inline-block;
+            text-align: right;
+            margin-right: 8px;
+        }
+        .subject-btn {
+            width: 70px;
+            height: 28px;
+            font-size: 0.92em;
+            border: none;
+            border-radius: 7px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .subject-btn.selected {
+            background: #1976d2;
+            color: #fff;
+        }
+        /* 모달 스타일 */
+        .modal-bg {
+            position: fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:1000; display:none; align-items:center; justify-content:center;
+        }
+        .modal {
+            background:#fff; border-radius:10px; padding:24px 20px; min-width:260px; box-shadow:0 4px 24px rgba(0,0,0,0.13); position:relative;
+        }
+        .modal-close {
+            position:absolute; right:12px; top:10px; font-size:1.2em; color:#888; cursor:pointer;
+        }
+        .modal label { display:block; margin-top:8px; font-size:0.98em; }
+        .modal input, .modal textarea {
+            width:100%; margin-top:2px; margin-bottom:8px; padding:5px; border-radius:5px; border:1px solid #bbb; font-size:1em;
+        }
+        .modal button[type=submit] {
+            width:100%; background:#1976d2; color:#fff; border:none; border-radius:5px; padding:7px 0; font-size:1em; margin-top:8px;
+        }
+        .vote-btns { display:flex; gap:10px; margin-top:10px; }
+        .vote-btns button { flex:1; height:36px; border-radius:5px; border:none; font-size:1em; }
+        .vote-btns .on { background:#43a047; color:#fff; }
+        .vote-btns .off { background:#e53935; color:#fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-time">
+            <div class="time-box"><span id="current-time">00:00:00</span></div>
+        </div>
+        <div class="main-panel">
+            <div class="left-panel">
+                <button id="report-btn">학생 신고</button>
+                <button id="aircon-btn">에어컨 투표</button>
+            </div>
+            <div class="right-panel">
+                <div class="subject-row"><span class="subject-time" id="time-국어">00:00:00</span><button class="subject-btn" data-subject="국어">국어</button></div>
+                <div class="subject-row"><span class="subject-time" id="time-영어">00:00:00</span><button class="subject-btn" data-subject="영어">영어</button></div>
+                <div class="subject-row"><span class="subject-time" id="time-수학">00:00:00</span><button class="subject-btn" data-subject="수학">수학</button></div>
+                <div class="subject-row"><span class="subject-time" id="time-과학">00:00:00</span><button class="subject-btn" data-subject="과학">과학</button></div>
+                <div class="subject-row"><span class="subject-time" id="time-사회">00:00:00</span><button class="subject-btn" data-subject="사회">사회</button></div>
+                <button id="reset-times-btn" style="margin-top:18px; background:#e53935; color:#fff; border:none; border-radius:7px; padding:7px 0; font-size:0.93em; cursor:pointer;">시간 전체 초기화:</button>
+            </div>
+        </div>
+    </div>
+    <!-- 신고 모달 -->
+    <div class="modal-bg" id="report-modal-bg">
+        <div class="modal">
+            <span class="modal-close" onclick="closeModal('report-modal-bg')">&times;</span>
+            <form id="report-form">
+                <label>대상 학번(선택)</label>
+                <input type="text" name="target_id" maxlength="20">
+                <label>대상 이름(선택)</label>
+                <input type="text" name="target_name" maxlength="20">
+                <label>내용(필수)</label>
+                <textarea name="content" required style="height:60px;"></textarea>
+                <button type="submit">신고하기</button>
+                <div id="report-result" style="font-size:0.95em; color:#d32f2f; margin-top:4px;"></div>
+            </form>
+        </div>
+    </div>
+    <!-- 에어컨 투표 모달 -->
+    <div class="modal-bg" id="vote-modal-bg">
+        <div class="modal">
+            <span class="modal-close" onclick="closeModal('vote-modal-bg')">&times;</span>
+            <div style="font-weight:bold; margin-bottom:10px;">에어컨 투표</div>
+            <div class="vote-btns">
+                <button class="on" onclick="voteAircon('on');return false;">켜기</button>
+                <button class="off" onclick="voteAircon('off');return false;">끄기</button>
+            </div>
+            <div id="aircon-vote-result" style="font-size:0.95em; color:#1976d2; margin-top:8px;"></div>
+        </div>
+    </div>
+    <script>
+        // 실시간 시계
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('current-time').textContent = `${h}:${m}:${s}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 과목별 타이머
+        const subjects = ['국어','영어','수학','과학','사회'];
+        // localStorage에서 시간 불러오기
+        const subjectTimes = JSON.parse(localStorage.getItem('subjectTimes') || '{"국어":0,"영어":0,"수학":0,"과학":0,"사회":0}');
+        let currentSubject = null;
+        let timerInterval = null;
+        function formatTime(sec) {
+            const h = String(Math.floor(sec/3600)).padStart(2,'0');
+            const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+            const s = String(sec%60).padStart(2,'0');
+            return `${h}:${m}:${s}`;
+        }
+        function updateSubjectDisplays() {
+            subjects.forEach(subj => {
+                document.getElementById('time-'+subj).textContent = formatTime(subjectTimes[subj]);
+            });
+        }
+        function saveSubjectTimes() {
+            localStorage.setItem('subjectTimes', JSON.stringify(subjectTimes));
+        }
+        document.querySelectorAll('.subject-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                // 이미 선택된 과목이면 정지
+                if(btn.classList.contains('selected')) {
+                    btn.classList.remove('selected');
+                    if(timerInterval) clearInterval(timerInterval);
+                    timerInterval = null;
+                    currentSubject = null;
+                    saveSubjectTimes();
+                    return;
+                }
+                // 다른 과목 타이머 정지
+                document.querySelectorAll('.subject-btn').forEach(b=>b.classList.remove('selected'));
+                if(timerInterval) clearInterval(timerInterval);
+                // 선택된 과목 타이머 시작
+                btn.classList.add('selected');
+                currentSubject = btn.getAttribute('data-subject');
+                timerInterval = setInterval(() => {
+                    subjectTimes[currentSubject]++;
+                    updateSubjectDisplays();
+                    saveSubjectTimes();
+                }, 1000);
+            });
+        });
+        updateSubjectDisplays();
+        // 페이지 벗어나면 타이머 자동 정지
+        window.addEventListener('beforeunload', function() {
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            document.querySelectorAll('.subject-btn').forEach(b=>b.classList.remove('selected'));
+            currentSubject = null;
+            saveSubjectTimes();
+        });
+
+        // 모달 열기/닫기
+        document.getElementById('report-btn').onclick = function(){
+            document.getElementById('report-modal-bg').style.display = 'flex';
+        };
+        function closeModal(id){
+            document.getElementById(id).style.display = 'none';
+            if(id==='report-modal-bg') document.getElementById('report-result').textContent = '';
+        }
+        // 로그인된 사용자 정보 가져오기 (신고자 정보 자동 입력)
+        let userInfo = null;
+        function fetchUserInfo() {
+            return fetch('/info_json').then(res=>res.json()).then(data=>{
+                userInfo = data;
+            });
+        }
+        fetchUserInfo();
+        // 신고 폼 제출(전송)
+        document.getElementById('report-form').onsubmit = function(e){
+            e.preventDefault();
+            const form = e.target;
+            if(!form.content.value.trim()){
+                document.getElementById('report-result').textContent = '내용은 필수입니다.';
+                return;
+            }
+            if(!userInfo) {
+                document.getElementById('report-result').textContent = '로그인 정보 확인 중입니다. 잠시 후 다시 시도해 주세요.';
+                return;
+            }
+            const data = {
+                reporter_id: userInfo.student_id,
+                reporter_name: userInfo.name,
+                target_id: form.target_id.value,
+                target_name: form.target_name.value,
+                content: form.content.value
+            };
+            fetch('/report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(result => {
+                document.getElementById('report-result').textContent = result.message;
+                if(result.success) setTimeout(()=>closeModal('report-modal-bg'), 1000);
+            })
+            .catch(() => {
+                document.getElementById('report-result').textContent = '신고 전송 실패';
+            });
+        };
+
+        // 에어컨 상태/투표 로직 (팝업에서만 투표, 언제든 변경 가능, 음수 방지)
+        let airconState = 'off';
+        let airconVotes = {on:0, off:0};
+        function getVoteInfo() {
+            return JSON.parse(localStorage.getItem('airconVoteInfo') || '{"vote":null}');
+        }
+        function setVoteInfo(info) {
+            localStorage.setItem('airconVoteInfo', JSON.stringify(info));
+        }
+        function updateAirconBox() {
+            document.getElementById('aircon-status').textContent = '현재: ' + (airconState==='on'?'켜짐':'꺼짐');
+            document.getElementById('aircon-vote-count').textContent = `켜기 ${airconVotes.on} : 끄기 ${airconVotes.off}`;
+        }
+        document.getElementById('aircon-btn').onclick = function(){
+            document.getElementById('vote-modal-bg').style.display = 'flex';
+            // 팝업에 현재 상태/현황 표시
+            document.getElementById('aircon-status').textContent = '현재: ' + (airconState==='on'?'켜짐':'꺼짐');
+            document.getElementById('aircon-vote-count').textContent = `켜기 ${airconVotes.on} : 끄기 ${airconVotes.off}`;
+            document.getElementById('aircon-vote-result').textContent = '';
+        };
+        function voteAircon(vote) {
+            const prev = getVoteInfo().vote;
+            if(prev === vote) {
+                document.getElementById('aircon-vote-result').textContent = '이미 선택됨';
+                return;
+            }
+            // 기존 투표 취소(음수 방지)
+            if(prev === 'on' && airconVotes.on > 0) airconVotes.on--;
+            if(prev === 'off' && airconVotes.off > 0) airconVotes.off--;
+            // 새 투표 반영
+            if(vote === 'on') airconVotes.on++;
+            if(vote === 'off') airconVotes.off++;
+            airconState = (airconVotes.on >= airconVotes.off) ? 'on' : 'off';
+            setVoteInfo({vote});
+            updateAirconBox();
+            document.getElementById('aircon-vote-result').textContent = (vote==='on'?'켜기':'끄기')+'로 투표됨';
+        }
+        // 팝업 내 상태/현황 표시
+        document.getElementById('vote-modal-bg').querySelector('.modal').insertAdjacentHTML('beforeend', `
+            <div style="margin-top:16px;">
+                <div id="aircon-status" style="font-size:0.98em; color:#1976d2; margin-bottom:2px;">현재: 꺼짐</div>
+                <div id="aircon-vote-count" style="font-size:0.95em; color:#333;">켜기 0 : 끄기 0</div>
+            </div>
+        `);
+        updateAirconBox();
+
+        // 과목 시간 전체 초기화
+        document.getElementById('reset-times-btn').onclick = function() {
+            if(confirm('정말 모든 과목 시간을 초기화할까요?')) {
+                subjects.forEach(subj => subjectTimes[subj]=0);
+                saveSubjectTimes();
+                updateSubjectDisplays();
+            }
+        };
+    </script>
+</body>
+</html> 

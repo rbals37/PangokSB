@@ -1,5 +1,5 @@
 # c:\Users\USER\Desktop\Project\PGSB\app.py
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import sqlite3
 import os
 
@@ -47,6 +47,42 @@ def init_db():
         reservation_time DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (seat_id) REFERENCES seats(seat_id)
+    )
+    """)
+
+    # Create report table (신고)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reports (
+        report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reporter_id TEXT,
+        target_id TEXT,
+        target_name TEXT,
+        content TEXT NOT NULL,
+        report_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Create aircon vote table (에어컨 투표)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS aircon_votes (
+        vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        vote TEXT NOT NULL, -- 'on' 또는 'off'
+        vote_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+    )
+    """)
+
+    # Create study timer table (과목별 공부 시간)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS study_times (
+        time_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        start_time DATETIME,
+        end_time DATETIME,
+        duration INTEGER DEFAULT 0, -- 초 단위 누적 시간
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
     )
     """)
     conn.commit()
@@ -198,24 +234,17 @@ def logout():
 def admin():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    # In a real application, you'd check if the user is an admin
-    # For this example, we will hard code the admin user_id
     user_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
-
     if user is None:
-        return redirect(url_for('login')) # Or handle the error
-
-    # Check if the user is an admin.
-    if user['user_id'] != 1:  # Assuming user_id 1 is the admin
+        return redirect(url_for('login'))
+    if user['user_id'] != 1:
         return "You are not authorized to view this page"
-
-    return redirect(url_for('arrange'))  # Redirect to admin/arrange
+    return render_template('admin_panel.html')
 
 
 @app.route('/admin/arrange', methods=['GET', 'POST'])
@@ -261,6 +290,82 @@ def arrange():
 
     return render_template('arrange.html')  # Create or modify the seat arrangement
 
+
+@app.route('/admin/reports')
+def admin_reports():
+    if 'user_id' not in session or session['user_id'] != 1:
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM reports ORDER BY report_time DESC")
+    reports = cursor.fetchall()
+    conn.close()
+    return render_template('reports.html', reports=reports)
+
+
+# --- 열품타 시스템 API ---
+
+@app.route('/report', methods=['POST'])
+def report():
+    data = request.get_json()
+    reporter_id = data.get('reporter_id')
+    target_id = data.get('target_id')
+    target_name = data.get('target_name')
+    content = data.get('content')
+    if not content:
+        return jsonify({'success': False, 'message': '내용은 필수입니다.'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO reports (reporter_id, target_id, target_name, content) VALUES (?, ?, ?, ?)", (reporter_id, target_id, target_name, content))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': '신고가 접수되었습니다.'})
+
+@app.route('/vote_aircon', methods=['POST'])
+def vote_aircon():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+    data = request.get_json()
+    vote = data.get('vote')  # 'on' 또는 'off'
+    if vote not in ['on', 'off']:
+        return jsonify({'success': False, 'message': '잘못된 투표 값입니다.'}), 400
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO aircon_votes (user_id, vote) VALUES (?, ?)", (user_id, vote))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': '투표가 완료되었습니다.'})
+
+@app.route('/study_timer', methods=['POST'])
+def study_timer():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+    data = request.get_json()
+    subject = data.get('subject')
+    action = data.get('action')  # 'start', 'stop', 'get'
+    user_id = session['user_id']
+    # 실제 타이머 로직은 추후 구현
+    return jsonify({'success': True, 'message': '타이머 API 호출됨', 'subject': subject, 'action': action})
+
+@app.route('/yeolpumta')
+def yeolpumta():
+    return render_template('yeolpumta.html')
+
+@app.route('/info_json')
+def info_json():
+    if 'user_id' not in session:
+        return jsonify({'error': 'not_logged_in'}), 401
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if not user:
+        return jsonify({'error': 'not_found'}), 404
+    # 이름 필드가 없으므로 student_id만 반환
+    return jsonify({'student_id': user['student_id'], 'name': user['student_id']})
 
 if __name__ == '__main__':
     app.run(debug=True)

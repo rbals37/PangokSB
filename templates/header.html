@@ -93,6 +93,7 @@
         <nav class="nav">
             <a href="{{ url_for('check') }}">홈</a>
             <a href="{{ url_for('info') }}">내 정보</a>
+            <a href="{{ url_for('yeolpumta') }}">열품타</a>
             {% if session.get('user_id') %}
             <a href="{{ url_for('logout') }}">로그아웃</a>
             {% else %}
